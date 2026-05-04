@@ -14,7 +14,7 @@ import (
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("\n!!! CRITICAL ERROR !!!\n")
+			fmt.Printf("\nRAN INTO ERROR\n")
 			fmt.Printf("The program encountered a corrupt file or a library crash.\n")
 			fmt.Printf("Reason: %v\n", r)
 			fmt.Println("Press Enter to exit...")
