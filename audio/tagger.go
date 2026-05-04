@@ -102,7 +102,6 @@ func getMP3Duration(path string) int {
 }
 
 func getFLACDuration(path string) int {
-	// Fixed: Using go-flac instead of mewkiz/flac to avoid API conflicts
 	f, err := goflac.ParseFile(path)
 	if err != nil {
 		return 0
@@ -113,11 +112,12 @@ func getFLACDuration(path string) int {
 		return 0
 	}
 
-	return int(info.TotalSamples / uint64(info.SampleRate))
+	// We cast both to uint64 to perform the division,
+	// then cast the final result to int for the return value.
+	return int(uint64(info.SampleCount) / uint64(info.SampleRate))
 }
 
 func getM4ADuration(path string) int {
-	// Fixed: Manually handling the file descriptor so we can close it properly
 	f, err := os.Open(path)
 	if err != nil {
 		return 0
@@ -135,7 +135,6 @@ func getM4ADuration(path string) int {
 	}
 
 	if mp4File.Moov != nil && mp4File.Moov.Mvhd != nil && mp4File.Moov.Mvhd.Timescale > 0 {
-		// Fixed: Explicit type casting to uint64 before division
 		return int(uint64(mp4File.Moov.Mvhd.Duration) / uint64(mp4File.Moov.Mvhd.Timescale))
 	}
 	return 0
@@ -188,7 +187,6 @@ func embedFLAC(path string, lyrics string, isSynced bool) error {
 
 	for i, meta := range f.Meta {
 		if meta.Type == goflac.VorbisComment {
-			// Fixed: Dereferencing pointer using *meta
 			vorbis, err = flacvorbis.ParseFromMetaDataBlock(*meta)
 			if err != nil {
 				return err
@@ -211,10 +209,8 @@ func embedFLAC(path string, lyrics string, isSynced bool) error {
 	newMeta := vorbis.Marshal()
 
 	if vorbisIdx != -1 {
-		// Fixed: Referencing as a pointer using &newMeta
 		f.Meta[vorbisIdx] = &newMeta
 	} else {
-		// Fixed: Referencing as a pointer using &newMeta
 		f.Meta = append(f.Meta, &newMeta)
 	}
 
@@ -228,18 +224,13 @@ func embedM4A(path string, lyrics string, isSynced bool) error {
 	}
 	defer mp4f.Close()
 
-	// Fixed: Extract the existing tags instead of calling SetLyrics directly
 	tags, err := mp4f.Read()
 	if err != nil {
 		tags = &mp4tag.MP4Tags{}
 	}
 
-	// Fixed: Using the Custom map to manually insert the lyrics atom (©lyr)
-	if tags.Custom == nil {
-		tags.Custom = make(map[string]string)
-	}
-	tags.Custom["©lyr"] = lyrics
+	// Use the library's built-in field for lyrics
+	tags.Lyrics = lyrics
 
-	// Fixed: Use Write instead of Save
 	return mp4f.Write(tags, []string{})
 }
