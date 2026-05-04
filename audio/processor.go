@@ -19,31 +19,27 @@ var supportedExtensions = map[string]bool{
 // ScanDirectory traverses the folder and subfolders to find music
 func ScanDirectory(root string) ([]string, error) {
 	var audioFiles []string
+	const maxFiles = 2000 // Your hard limit
 
-	// Notice the third parameter: 'err error'
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		// 1. If there was an error accessing the path, handle it first
 		if err != nil {
 			return err
 		}
-
-		// 2. Skip directories
 		if d.IsDir() {
 			return nil
 		}
 
-		// 3. Check the file extension
+		// Check the limit
+		if len(audioFiles) >= maxFiles {
+			return filepath.SkipDir // Stop scanning once we hit 2000
+		}
+
 		ext := strings.ToLower(filepath.Ext(path))
 		if supportedExtensions[ext] {
 			audioFiles = append(audioFiles, path)
 		}
-
 		return nil
 	})
 
-	if err != nil {
-		return nil, err
-	}
-
-	return audioFiles, nil
+	return audioFiles, err
 }

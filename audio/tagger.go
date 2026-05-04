@@ -2,7 +2,6 @@ package audio
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,6 +31,7 @@ type Metadata struct {
 	Genre     string
 	Duration  int
 	HasLyrics bool
+	Format    string
 }
 
 // ReadMetadata extracts tags regardless of file format
@@ -48,6 +48,7 @@ func ReadMetadata(path string) (Metadata, error) {
 	}
 
 	duration := getDuration(path)
+	ext := strings.ToUpper(strings.TrimPrefix(filepath.Ext(path), "."))
 
 	return Metadata{
 		Title:     m.Title(),
@@ -57,6 +58,7 @@ func ReadMetadata(path string) (Metadata, error) {
 		Genre:     m.Genre(),
 		HasLyrics: m.Lyrics() != "",
 		Duration:  duration,
+		Format:    ext, // <--- Assign it here
 	}, nil
 }
 
@@ -88,16 +90,23 @@ func getMP3Duration(path string) int {
 
 	d := mp3.NewDecoder(t)
 	var totalDuration float64
-	for {
-		var f mp3.Frame
-		if err := d.Decode(&f, nil); err != nil {
-			if err == io.EOF {
-				break
-			}
+	var skipped int
+
+	frameCount := 0
+	for frameCount < 50000 {
+		var f mp3.Frame // This is a struct value
+
+		// If Decode succeeds (err == nil), f is automatically valid
+		if err := d.Decode(&f, &skipped); err != nil {
 			break
 		}
+
+		// We can call Duration() directly because the error check passed
 		totalDuration += f.Duration().Seconds()
+
+		frameCount++
 	}
+
 	return int(totalDuration)
 }
 

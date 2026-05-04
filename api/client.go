@@ -13,14 +13,14 @@ import (
 
 // 1. Define the Response Structure
 type LyricResponse struct {
-	ID           int    `json:"id"`
-	TrackName    string `json:"trackName"`
-	ArtistName   string `json:"artistName"`
-	AlbumName    string `json:"albumName"`
-	Duration     int    `json:"duration"`
-	Instrumental bool   `json:"instrumental"`
-	PlainLyrics  string `json:"plainLyrics"`
-	SyncedLyrics string `json:"syncedLyrics"`
+	ID           int     `json:"id"`
+	TrackName    string  `json:"trackName"`
+	ArtistName   string  `json:"artistName"`
+	AlbumName    string  `json:"albumName"`
+	Duration     float64 `json:"duration"`
+	Instrumental bool    `json:"instrumental"`
+	PlainLyrics  string  `json:"plainLyrics"`
+	SyncedLyrics string  `json:"syncedLyrics"`
 }
 
 // 2. Define the Error Structure

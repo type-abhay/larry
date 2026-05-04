@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
+	"path/filepath"
 	"strings"
 
 	"lyric-emb/api"
@@ -13,6 +13,15 @@ import (
 )
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("\n!!! CRITICAL ERROR !!!\n")
+			fmt.Printf("The program encountered a corrupt file or a library crash.\n")
+			fmt.Printf("Reason: %v\n", r)
+			fmt.Println("Press Enter to exit...")
+			bufio.NewReader(os.Stdin).ReadString('\n')
+		}
+	}()
 	reader := bufio.NewReader(os.Stdin)
 	targetDir := "."
 	if len(os.Args) > 1 {
@@ -50,29 +59,102 @@ func main() {
 
 // runSelectiveProcess handles the one-by-one logic you requested
 func runSelectiveProcess(files []string, reader *bufio.Reader) {
+	fmt.Println("\nSelective Embed Mode")
+	fmt.Println("Available commands:")
+	fmt.Println("  search <keyword> : List all files containing the keyword")
+	fmt.Println("  info <filename>  : View full tags for a specific file")
+	fmt.Println("  get <filename>   : Fetch API lyrics and embed them")
+	fmt.Println("  exit (or back)   : Return to the main menu")
+	fmt.Println("Note: You don't need the full name! 'info baldur' will find 'Baldur's Gate.mp3'")
+
 	for {
-		fmt.Println("\n--- AVAILABLE TRACKS ---")
-		// We read basic info for the list
-		for i, path := range files {
-			meta, _ := audio.ReadMetadata(path)
-			fmt.Printf("[%d] %s (%ds)\n", i+1, meta.Title, meta.Duration)
-		}
-		fmt.Println("[0] Back to Main Menu")
-		fmt.Print("\nSelect track number: ")
-
+		fmt.Print("\nlarry> ")
 		input := getInput(reader)
-		if input == "0" {
-			return
-		}
-
-		idx, err := strconv.Atoi(input)
-		if err != nil || idx < 1 || idx > len(files) {
-			fmt.Println("Invalid track number.")
+		if input == "" {
 			continue
 		}
 
-		// Process the specific chosen file
-		processSingleFile(files[idx-1], reader)
+		// Split the input into the command and the arguments
+		parts := strings.Fields(input)
+		command := strings.ToLower(parts[0])
+
+		// Rejoin the rest of the string for the search term and remove quotes
+		arg := strings.Join(parts[1:], " ")
+		arg = strings.Trim(arg, "\"")
+
+		switch command {
+		case "back", "exit":
+			return
+
+		case "search":
+			if arg == "" {
+				fmt.Println(" ! Usage: search <keyword>")
+				continue
+			}
+			term := strings.ToLower(arg)
+			count := 0
+			for _, f := range files {
+				base := strings.ToLower(filepath.Base(f))
+				if strings.Contains(base, term) {
+					fmt.Printf(" - %s\n", filepath.Base(f))
+					count++
+				}
+			}
+			fmt.Printf(" > Found %d matching files.\n", count)
+
+		case "info", "get":
+			if arg == "" {
+				fmt.Printf(" ! Usage: %s <filename>\n", command)
+				continue
+			}
+
+			// Find matching files based on the argument
+			term := strings.ToLower(arg)
+			var matches []string
+			for _, f := range files {
+				base := strings.ToLower(filepath.Base(f))
+				if strings.Contains(base, term) {
+					matches = append(matches, f)
+				}
+			}
+
+			// Handle the match results
+			if len(matches) == 0 {
+				fmt.Println(" ! No files found matching that name.")
+				continue
+			} else if len(matches) > 1 {
+				fmt.Println(" ! Multiple files found. Please be more specific:")
+				for _, m := range matches {
+					fmt.Printf("   - %s\n", filepath.Base(m))
+				}
+				continue
+			}
+
+			// Exactly one match found!
+			targetPath := matches[0]
+
+			if command == "info" {
+				meta, err := audio.ReadMetadata(targetPath)
+				if err != nil {
+					fmt.Printf(" ! Error reading metadata: %v\n", err)
+					continue
+				}
+				fmt.Println("\n--- META DATA INFO ---")
+				fmt.Printf("File:     %s\n", filepath.Base(targetPath))
+				fmt.Printf("Title:    %s\n", meta.Title)
+				fmt.Printf("Artist:   %s\n", meta.Artist)
+				fmt.Printf("Album:    %s\n", meta.Album)
+				fmt.Printf("Format:   %s\n", meta.Format)
+				fmt.Printf("Duration: %ds\n", meta.Duration)
+				fmt.Printf("Lyrics:   %t (Embedded)\n", meta.HasLyrics)
+			} else {
+				// Trigger the API and Embedding flow
+				processSingleFile(targetPath, reader)
+			}
+
+		default:
+			fmt.Println(" ! Unknown command. Try: search, info, get, exit")
+		}
 	}
 }
 
@@ -106,7 +188,7 @@ func processSingleFile(path string, reader *bufio.Reader) {
 	}
 	// ... (Keep the metadata display and API call logic from before) ...
 
-	fmt.Printf("\nAPI Response (Duration Match: %ds):\n", lyrics.Duration)
+	fmt.Printf("\nAPI Response (Duration Match: %ds):\n", int(lyrics.Duration))
 	fmt.Println("1. Embed Synced Lyrics")
 	fmt.Println("2. Embed Plain Lyrics")
 	fmt.Println("3. Cancel")
