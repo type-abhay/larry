@@ -104,6 +104,7 @@ func processSingleFile(path string, reader *bufio.Reader) {
 		fmt.Printf("API Error: %v\n", err)
 		return
 	}
+	// ... (Keep the metadata display and API call logic from before) ...
 
 	fmt.Printf("\nAPI Response (Duration Match: %ds):\n", lyrics.Duration)
 	fmt.Println("1. Embed Synced Lyrics")
@@ -111,9 +112,45 @@ func processSingleFile(path string, reader *bufio.Reader) {
 	fmt.Println("3. Cancel")
 	fmt.Print("Choice: ")
 
+	// We capture the input here
 	choice := getInput(reader)
-	// ... logic to call audio.EmbedLyrics based on choice ...
-	// (Similar to previous implementation, but for this single path)
+
+	var lyricText string
+	var isSynced bool
+
+	// 1. Using the 'choice' variable
+	switch choice {
+	case "1":
+		if lyrics.SyncedLyrics == "" {
+			fmt.Println(" ! Error: The API did not return synced lyrics for this track.")
+			return
+		}
+		lyricText = lyrics.SyncedLyrics
+		isSynced = true
+	case "2":
+		if lyrics.PlainLyrics == "" {
+			fmt.Println(" ! Error: The API did not return plain lyrics for this track.")
+			return
+		}
+		lyricText = lyrics.PlainLyrics
+		isSynced = false
+	case "3":
+		fmt.Println(" > Operation cancelled.")
+		return
+	default:
+		fmt.Println(" ! Invalid selection. Returning to list.")
+		return
+	}
+
+	// 2. The Final Payoff: Embedding the data
+	fmt.Printf(" > Embedding %s lyrics into file...\n", map[bool]string{true: "synced", false: "plain"}[isSynced])
+
+	err = audio.EmbedLyrics(path, lyricText, isSynced)
+	if err != nil {
+		fmt.Printf(" [X] Failed to embed: %v\n", err)
+	} else {
+		fmt.Println(" [✓] Success! Lyrics are now part of the file.")
+	}
 }
 
 // Helper to handle repetitive input cleaning
