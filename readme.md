@@ -77,7 +77,8 @@ If you want to compile the project yourself, follow these steps:
 * **Issues:** Found a bug? Open an issue on the GitHub repository or contact the maintainer.
 ##  Support the Project
 Just give it a ⭐ or share if you found it useful :)
-## Credits
+##  Credits
 Uses [LRCLIB](https://lrclib.net/) API to fetch lyrics. These guys the goats for providing lyrics in the first place :)
+
 ---
 *Created with ❤️ & Personal Need 👀*
