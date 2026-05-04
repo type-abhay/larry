@@ -291,8 +291,7 @@ func runBulkProcess(folder string, reader *bufio.Reader) {
 		}
 	}
 
-	// Final Summary
-	fmt.Println("\n=== BULK SUMMARY ===")
+	fmt.Println("\n=== BULK RUN RESULTS ===")
 	fmt.Printf("Successfully embedded: %d\n", successCount)
 	fmt.Printf("Failed / Not Found: %d\n", len(notFound))
 
