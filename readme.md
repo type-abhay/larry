@@ -32,7 +32,7 @@ A command-line utility built in Go for managing audio metadata. **Lyric Embedder
 1. Type `get <song name>`.
 2. The app reads your local tags and queries the LRCLIB API.
 3. If a match is found, you choose between **Synced** (time-stamped) or **Plain** lyrics.
-4. The app performs "audio surgery" to save the tags without re-encoding the audio.
+4. BOOM the metadata is edited and you lyrics are embedded :)
 
 ### The Bulk Flow
 The bulk command is designed for speed. It prioritizes **Synced** lyrics; if those aren't found, it falls back to **Plain** text. If the API has no record of the song, it skips the file and provides a summary report at the end.
